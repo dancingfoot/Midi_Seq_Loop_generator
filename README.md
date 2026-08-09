@@ -82,6 +82,71 @@ npm run preview
 
 ---
 
+## 🔗 Ableton Link Bridge & AppImage Packaging
+
+### Why an Ableton Link Bridge is Required
+Ableton Link relies on raw UDP multicast sockets (`port 20808`) on the local network to discover other Link-enabled DAWs (such as Ableton Live, Bitwig, or SERATO) and synchronize tempo/phase with microsecond precision. Standard web browsers sandbox raw UDP socket access for security reasons.
+
+To support Ableton Link in a web application:
+1. A lightweight native bridge process runs locally (`node-abletonlink` or C++ binary).
+2. The bridge connects to Ableton Link on the LAN via UDP.
+3. The bridge communicates with PolyRhythm Studio over a local WebSocket (`ws://localhost:8080`).
+
+### Packaging Into a Single `.AppImage` File
+**Yes, the web application, bridge binary, and Node/Electron runtime can all be packaged into a single standalone `.AppImage` executable for Linux.**
+
+#### Recommended Packaging Setup (Electron + Electron-Builder):
+
+1. **Structure your Electron main process (`electron/main.ts`)**:
+```typescript
+import { app, BrowserWindow } from 'electron';
+import { Link } from 'abletonlink'; // Native C++ Link bindings
+import { WebSocketServer } from 'ws';
+
+// Start native Ableton Link instance
+const link = new Link();
+link.enable();
+
+// Start local WebSocket bridge server for the app
+const wss = new WebSocketServer({ port: 8080 });
+wss.on('connection', (ws) => {
+  link.on('tempo', (bpm: number) => ws.send(JSON.stringify({ type: 'BPM', bpm })));
+  ws.on('message', (msg: string) => {
+    const data = JSON.parse(msg);
+    if (data.type === 'SET_BPM') link.bpm = data.bpm;
+  });
+});
+
+// Launch GUI
+app.whenReady().then(() => {
+  const win = new BrowserWindow({ width: 1280, height: 800 });
+  win.loadURL('http://localhost:3000'); // or dist/index.html
+});
+```
+
+2. **Add `electron-builder` configuration in `package.json`**:
+```json
+{
+  "build": {
+    "appId": "com.polyrhythm.app",
+    "productName": "PolyRhythm Studio",
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Audio"
+    }
+  }
+}
+```
+
+3. **Build the `.AppImage` package**:
+```bash
+npx electron-builder --linux AppImage
+```
+
+The resulting `dist/PolyRhythm_Studio.AppImage` contains everything in one executable file. Running `./PolyRhythm_Studio.AppImage` launches the UI and the Ableton Link bridge simultaneously with full network synchronization capabilities.
+
+---
+
 ## 🛠️ Built With
 
 * **Framework**: React 18 & TypeScript
