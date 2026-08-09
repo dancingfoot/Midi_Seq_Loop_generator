@@ -124,12 +124,29 @@ app.whenReady().then(() => {
 });
 ```
 
-2. **Add `electron-builder` configuration in `package.json`**:
+2. **Install exact `electron` version & configure `package.json`**:
+
+In your project root (`~/Midi_Seq_Loop_generator`), run `npm install` to update your node_modules with pinned electron:
+```bash
+npm install -D electron@33.2.1 electron-builder
+```
+
+And ensure your `package.json` pins `electron` exactly (without caret `^`) and sets `electronVersion`:
 ```json
 {
+  "name": "midi-seq-loop-generator",
+  "version": "1.0.0",
+  "description": "PolyRhythm Studio & Ableton Link Sequencer",
+  "author": "xpspop",
+  "main": "dist/server.cjs",
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "^25.1.8"
+  },
   "build": {
     "appId": "com.polyrhythm.app",
     "productName": "PolyRhythm Studio",
+    "electronVersion": "33.2.1",
     "linux": {
       "target": ["AppImage"],
       "category": "Audio"
@@ -139,11 +156,21 @@ app.whenReady().then(() => {
 ```
 
 3. **Build the `.AppImage` package**:
+
 ```bash
+# Ensure project is compiled first
+npm run build
+
+# Build the AppImage executable
 npx electron-builder --linux AppImage
 ```
 
-The resulting `dist/PolyRhythm_Studio.AppImage` contains everything in one executable file. Running `./PolyRhythm_Studio.AppImage` launches the UI and the Ableton Link bridge simultaneously with full network synchronization capabilities.
+The output executable will be created at `dist/PolyRhythm_Studio.AppImage` (or `dist/Midi_Seq_Loop_generator-1.0.0.AppImage`). Run it with:
+
+```bash
+chmod +x dist/*.AppImage
+./dist/*.AppImage
+```
 
 ---
 
