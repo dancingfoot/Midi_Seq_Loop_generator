@@ -1,0 +1,6 @@
+{
+  "name": "MIDI Sequencer Loop Recorder",
+  "description": "A web-based MIDI sequencer and loop recorder featuring polyrhythmic quantization, custom automation curves, probability triggers, MIDI clock sync, Ableton Link-style network syncing, and AI-powered rhythm transcription.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
