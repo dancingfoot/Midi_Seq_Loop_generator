@@ -10,6 +10,8 @@
     "dev": "tsx server.ts",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
+    "bridge": "node bridge.js",
+    "build:bridge": "npx pkg bridge.js --targets node18-linux-x64 --output dist/link-bridge",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit"
   },

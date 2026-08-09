@@ -92,6 +92,33 @@ To support Ableton Link in a web application:
 2. The bridge connects to Ableton Link on the LAN via UDP.
 3. The bridge communicates with PolyRhythm Studio over a local WebSocket (`ws://localhost:8080`).
 
+### 🌁 Running ONLY the Standalone Ableton Link Bridge
+
+If you want to run **only the Link Bridge** in the background or on a separate device without launching the full web browser UI or Electron application, you can run the included standalone bridge script or package it as a single binary executable.
+
+#### Option A: Run directly with Node.js
+```bash
+# Run the bridge on default port 8080
+npm run bridge
+
+# Or specify a custom port
+BRIDGE_PORT=9000 npm run bridge
+```
+
+#### Option B: Build a Standalone Executable Binary (`link-bridge`)
+You can package `bridge.js` into a standalone self-contained binary (no Node.js installation required on the target machine) using `pkg`:
+
+```bash
+# Compile bridge into a single Linux binary executable
+npx pkg bridge.js --targets node18-linux-x64 --output dist/link-bridge
+
+# Run the compiled standalone bridge executable
+chmod +x dist/link-bridge
+./dist/link-bridge
+```
+
+---
+
 ### Packaging Into a Single `.AppImage` File
 **Yes, the web application, bridge binary, and Node/Electron runtime can all be packaged into a single standalone `.AppImage` executable for Linux.**
 
@@ -157,19 +184,21 @@ And ensure your `package.json` pins `electron` exactly (without caret `^`) and s
 
 3. **Build the `.AppImage` package**:
 
-```bash
-# Ensure project is compiled first
-npm run build
+> 💡 **Note on `spawn ENOTDIR`**: The error occurs if the application attempts to start in Vite development mode inside a packaged `.asar` archive. Running `npm run build` ensures production bundle assets are created, and `NODE_ENV=production` is automatically active in the built server.
 
-# Build the AppImage executable
-npx electron-builder --linux AppImage
+```bash
+# 1. Build production assets first (generates dist/index.html & dist/server.cjs)
+NODE_ENV=production npm run build
+
+# 2. Package into .AppImage
+NODE_ENV=production npx electron-builder --linux AppImage
 ```
 
-The output executable will be created at `dist/PolyRhythm_Studio.AppImage` (or `dist/Midi_Seq_Loop_generator-1.0.0.AppImage`). Run it with:
+The output executable will be created at `dist/PolyRhythm_Studio-1.0.0.AppImage`. Run it with:
 
 ```bash
 chmod +x dist/*.AppImage
-./dist/*.AppImage
+NODE_ENV=production ./dist/*.AppImage
 ```
 
 ---

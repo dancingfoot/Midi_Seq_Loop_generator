@@ -1,6 +1,7 @@
 import express from "express";
 import http from "http";
 import path from "path";
+import fs from "fs";
 import { WebSocketServer, WebSocket } from "ws";
 import { GoogleGenAI, Type } from "@google/genai";
 import { createServer as createViteServer } from "vite";
@@ -252,20 +253,47 @@ function broadcast(senderWs: WebSocket | null, data: any) {
 
 // Integrate Vite Middleware for Hot Reloading and Front-end serving
 async function initServer() {
-  if (process.env.NODE_ENV !== "production") {
-    console.log("Starting server in DEVELOPMENT mode with Vite integration...");
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
+  const isExplicitDev = process.env.NODE_ENV === "development";
+  const hasViteConfig = fs.existsSync(path.join(process.cwd(), "vite.config.ts"));
+  const isElectronOrBundled = Boolean((process as any).versions?.electron) || process.env.NODE_ENV === "production";
+
+  const shouldRunVite = isExplicitDev || (hasViteConfig && !isElectronOrBundled);
+
+  function serveStatic() {
     console.log("Starting server in PRODUCTION mode...");
-    const distPath = path.join(process.cwd(), "dist");
+    const possiblePaths = [
+      path.join(process.cwd(), "dist"),
+      path.join(__dirname, "..", "dist"),
+      __dirname,
+      path.join(process.cwd(), "public")
+    ];
+    const distPath = possiblePaths.find(p => fs.existsSync(path.join(p, "index.html"))) || possiblePaths[0];
+
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+      const indexPath = path.join(distPath, "index.html");
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send("PolyRhythm Studio: Built static index.html not found. Please run 'npm run build' first.");
+      }
     });
+  }
+
+  if (shouldRunVite) {
+    try {
+      console.log("Starting server in DEVELOPMENT mode with Vite integration...");
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      });
+      app.use(vite.middlewares);
+    } catch (viteErr) {
+      console.warn("Vite middleware failed to initialize, falling back to production static server:", viteErr);
+      serveStatic();
+    }
+  } else {
+    serveStatic();
   }
 
   // Handle WebSocket upgrade
