@@ -162,6 +162,15 @@ function generateLocalBackupTranscription() {
 // Low-latency WebSocket Jam Server (Ableton Link + MIDI sync simulation)
 const wss = new WebSocketServer({ noServer: true });
 
+let isAbletonLinkNative = false;
+try {
+  const { Link } = require("abletonlink");
+  isAbletonLinkNative = true;
+  console.log("✅ Native `abletonlink` module detected in server!");
+} catch (e) {
+  isAbletonLinkNative = false;
+}
+
 interface Jammer {
   ws: WebSocket;
   id: string;
@@ -183,6 +192,7 @@ wss.on("connection", (ws) => {
     type: "WELCOME",
     id,
     name: jammerName,
+    abletonLinkNative: isAbletonLinkNative,
     activeJammers: jammers.map(j => ({ id: j.id, name: j.name })),
   }));
 

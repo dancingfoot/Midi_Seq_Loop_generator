@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { JamPeer } from "../types";
-import { Link, Wifi, Radio, Zap, Play, Square, Users, Volume2, ChevronDown, ChevronUp, Maximize2, Minimize2 } from "lucide-react";
+import { Link, Wifi, Radio, Zap, Play, Square, Users, Volume2, ChevronDown, ChevronUp, Maximize2, Minimize2, Cpu, ShieldCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 interface JamSyncPanelProps {
   isPlaying: boolean;
@@ -20,6 +20,7 @@ export const JamSyncPanel: React.FC<JamSyncPanelProps> = ({
   engine,
 }) => {
   const [wsConnected, setWsConnected] = useState<boolean>(false);
+  const [isNativeLink, setIsNativeLink] = useState<boolean | null>(null);
   const [peerList, setPeerList] = useState<JamPeer[]>([]);
   const [selfId, setSelfId] = useState<string>("");
   const [selfName, setSelfName] = useState<string>("Jammer");
@@ -69,7 +70,13 @@ export const JamSyncPanel: React.FC<JamSyncPanelProps> = ({
           case "WELCOME":
             setSelfId(data.id);
             setSelfName(data.name);
-            setPeerList(data.activeJammers.filter((j: any) => j.id !== data.id));
+            setIsNativeLink(Boolean(data.abletonLinkNative));
+            setPeerList(data.activeJammers ? data.activeJammers.filter((j: any) => j.id !== data.id) : []);
+            logRtpPacket(
+              data.abletonLinkNative
+                ? "✅ C++ Native Ableton Link UDP Engine ACTIVE"
+                : "ℹ️ Running on High-Precision WebSocket Clock (Simulated)"
+            );
             break;
 
           case "PEER_JOINED":
@@ -266,9 +273,53 @@ export const JamSyncPanel: React.FC<JamSyncPanelProps> = ({
             </span>
           </div>
 
-          <p className="text-xs text-zinc-400">
-            Enables peer-to-peer beat phase alignment. Open this app in another tab or device to trigger multi-device jam sessions.
-          </p>
+          {/* Ableton Link Native vs Simulated Engine Banner */}
+          <div className={`p-3.5 rounded-xl border flex items-start gap-3 transition-all ${
+            isNativeLink === true
+              ? "bg-emerald-950/40 border-emerald-500/30 text-emerald-200"
+              : isNativeLink === false
+              ? "bg-amber-950/40 border-amber-500/30 text-amber-200"
+              : "bg-zinc-950/40 border-white/10 text-zinc-300"
+          }`}>
+            {isNativeLink === true ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+            ) : isNativeLink === false ? (
+              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            ) : (
+              <Cpu className="w-5 h-5 text-zinc-400 shrink-0 mt-0.5 animate-pulse" />
+            )}
+            <div className="flex-1 text-xs leading-relaxed">
+              <div className="flex items-center justify-between font-bold font-mono uppercase tracking-wider text-[11px] mb-1">
+                <span>
+                  {isNativeLink === true
+                    ? "C++ Native Ableton Link Engine Active"
+                    : isNativeLink === false
+                    ? "Simulated WebSocket Clock (Fallback)"
+                    : "Detecting Link Engine..."}
+                </span>
+                {isNativeLink !== null && (
+                  <span className={`px-2 py-0.5 text-[9px] rounded font-mono ${
+                    isNativeLink ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                  }`}>
+                    {isNativeLink ? "UDP Multicast :20808" : "WS Clock Mode"}
+                  </span>
+                )}
+              </div>
+              {isNativeLink === true ? (
+                <p className="text-emerald-300/90 text-[11px]">
+                  Native <code className="bg-emerald-900/60 px-1 py-0.5 rounded font-mono text-[10px]">abletonlink</code> C++ bindings loaded. Direct UDP peer-to-peer sync enabled with Ableton Live, Bitwig, Reason, and iOS Link apps on your local network.
+                </p>
+              ) : isNativeLink === false ? (
+                <p className="text-amber-300/90 text-[11px]">
+                  Native <code className="bg-amber-900/60 px-1 py-0.5 rounded font-mono text-[10px]">abletonlink</code> C++ binary was not detected in environment. PolyRhythm Studio is running on a high-precision WebSocket phase clock. Run <code className="bg-amber-900/60 px-1 py-0.5 rounded font-mono text-[10px]">npm install abletonlink</code> to enable raw UDP C++ Link networking.
+                </p>
+              ) : (
+                <p className="text-zinc-400 text-[11px]">
+                  Establishing sync channel connection to query Ableton Link C++ UDP engine status...
+                </p>
+              )}
+            </div>
+          </div>
 
           {/* Ableton Link Visualizer Pumping Ring */}
           <div className="bg-zinc-950/60 border border-white/5 rounded-xl p-6 flex flex-col items-center justify-center relative overflow-hidden h-44">
