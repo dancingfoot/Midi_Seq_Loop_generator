@@ -106,11 +106,11 @@ BRIDGE_PORT=9000 npm run bridge
 ```
 
 #### Option B: Build a Standalone Executable Binary (`link-bridge`)
-You can package `bridge.js` into a standalone self-contained binary (no Node.js installation required on the target machine) using `pkg`:
+You can package `bridge.cjs` into a standalone self-contained binary (no Node.js installation required on the target machine) using `pkg`:
 
 ```bash
 # Compile bridge into a single Linux binary executable
-npx pkg bridge.js --targets node18-linux-x64 --output dist/link-bridge
+npx pkg bridge.cjs --targets node18-linux-x64 --output dist/link-bridge
 
 # Run the compiled standalone bridge executable
 chmod +x dist/link-bridge
